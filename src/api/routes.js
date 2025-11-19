@@ -3,6 +3,7 @@
  */
 import { scrapeAllAreas, getWeatherData } from '../services/weatherScraper.js';
 import { createLogger } from '../utils/logger.js';
+import { sendJson } from '../utils/response.js';
 
 const logger = createLogger('APIRoutes');
 
@@ -27,12 +28,10 @@ export async function handleGetWeather(url, res) {
 
     const result = await getWeatherData(options);
 
-    res.writeHead(result.success ? 200 : 500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result));
+    sendJson(res, result.success ? 200 : 500, result);
   } catch (error) {
     logger.error('Error in GET /api/weather:', error.message);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: false, error: error.message }));
+    sendJson(res, 500, { success: false, error: error.message });
   }
 }
 
@@ -42,25 +41,19 @@ export async function handleGetWeather(url, res) {
  */
 export async function handlePostScrape(res) {
   if (isScrapingInProgress) {
-    res.writeHead(429, { 'Content-Type': 'application/json' });
-    res.end(
-      JSON.stringify({
-        success: false,
-        message: 'Scraping is already in progress. Please wait.',
-      })
-    );
+    sendJson(res, 429, {
+      success: false,
+      message: 'Scraping is already in progress. Please wait.',
+    });
     return;
   }
 
   // Start scraping in background (non-blocking)
   isScrapingInProgress = true;
-  res.writeHead(202, { 'Content-Type': 'application/json' });
-  res.end(
-    JSON.stringify({
-      success: true,
-      message: 'Scraping started in background. Check /api/scrape/status for progress.',
-    })
-  );
+  sendJson(res, 202, {
+    success: true,
+    message: 'Scraping started in background. Check /api/scrape/status for progress.',
+  });
 
   // Run scraping asynchronously
   scrapeAllAreas()
@@ -85,13 +78,10 @@ export async function handlePostScrape(res) {
  * Check scraping progress
  */
 export function handleGetScrapeStatus(res) {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(
-    JSON.stringify({
-      isScrapingInProgress,
-      lastScrapeResult,
-    })
-  );
+  sendJson(res, 200, {
+    isScrapingInProgress,
+    lastScrapeResult,
+  });
 }
 
 /**
@@ -105,11 +95,9 @@ export async function handleGetProvinces(res) {
 
     if (error) throw error;
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: true, data }));
+    sendJson(res, 200, { success: true, data });
   } catch (error) {
     logger.error('Error in GET /api/provinces:', error.message);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ success: false, error: error.message }));
+    sendJson(res, 500, { success: false, error: error.message });
   }
 }
