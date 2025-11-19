@@ -2,11 +2,12 @@
   "name": "mowar-scrap",
   "version": "1.0.0",
   "description": "Weather data scraper for MOWRAM",
-  "main": "js.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node js.js",
-    "server": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "scrape": "node js.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.78.0",

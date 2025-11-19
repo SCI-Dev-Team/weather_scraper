@@ -1,0 +1,41 @@
+# GitHub Actions Workflow - Runs scraper daily at 1 AM UTC+7 (6 PM UTC)
+# This is an alternative to Supabase Edge Functions
+
+name: Daily Weather Scraper
+
+on:
+  schedule:
+    # Runs at 6:00 PM UTC (1:00 AM UTC+7 / Cambodia time)
+    - cron: '0 18 * * *'
+  
+  # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  scrape-weather:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run weather scraper
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm start
+      
+      - name: Notify on failure
+        if: failure()
+        run: echo "Weather scraping failed! Check the logs above."
+
