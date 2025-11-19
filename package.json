@@ -1,20 +1,40 @@
 {
-  "name": "mowar-scrap",
-  "version": "1.0.0",
-  "description": "Weather data scraper for MOWRAM",
-  "main": "server.js",
+  "name": "mowram-weather-scraper",
+  "version": "2.0.0",
+  "description": "Professional weather data scraper for MOWRAM Cambodia",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "scrape": "node js.js"
+    "start": "node src/server.js",
+    "dev": "NODE_ENV=development nodemon src/server.js",
+    "scrape": "node scripts/scrape.js",
+    "lint": "eslint src/ scripts/",
+    "lint:fix": "eslint src/ scripts/ --fix",
+    "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.js\" \"*.json\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.js\" \"scripts/**/*.js\" \"*.json\" \"*.md\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "weather",
+    "scraper",
+    "cambodia",
+    "mowram",
+    "forecast"
+  ],
+  "author": "",
+  "license": "MIT",
   "dependencies": {
     "@supabase/supabase-js": "^2.78.0",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^17.2.3",
-    "express": "^4.18.2",
-    "node-fetch": "^3.3.2",
     "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "nodemon": "^3.1.11",
+    "prettier": "^3.6.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
