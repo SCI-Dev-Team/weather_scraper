@@ -161,6 +161,7 @@ weather_scraper/
 │
 └── supabase/                   # Supabase Related
     ├── functions/             → Edge functions
+    │   └── weather-scraper/   → Serverless scraping function
     └── supabase_schema.sql    → Database schema
 ```
 

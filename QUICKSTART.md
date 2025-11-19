@@ -37,7 +37,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 
 1. Go to your Supabase project
 2. Open SQL Editor
-3. Copy content from `supabase_schema.sql`
+3. Copy content from `supabase/supabase_schema.sql`
 4. Run the SQL script
 
 ### Step 4: Start Development Server

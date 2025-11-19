@@ -34,7 +34,7 @@ weather_scraper/
 │   └── client.js              # Frontend JavaScript
 ├── scripts/
 │   └── scrape.js              # CLI scraping script
-├── supabase/
+├── supabase/                  # Supabase related files
 │   ├── functions/             # Supabase Edge Functions
 │   └── supabase_schema.sql    # Database schema
 ├── tests/                     # Test files (coming soon)

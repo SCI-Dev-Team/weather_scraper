@@ -29,10 +29,10 @@ Complete guide to all documentation files in this project.
 
 | File                  | Purpose                        |
 | --------------------- | ------------------------------ |
-| `.env.example`        | Environment variables template |
-| `package.json`        | Dependencies and scripts       |
-| `vercel.json`         | Deployment configuration       |
-| `supabase_schema.sql` | Database schema                |
+| `.env.example`                  | Environment variables template |
+| `package.json`                  | Dependencies and scripts       |
+| `vercel.json`                   | Deployment configuration       |
+| `supabase/supabase_schema.sql`  | Database schema                |
 
 ---
 
