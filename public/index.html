@@ -197,6 +197,7 @@
             </select>
             <button onclick="loadWeather()">Load Weather</button>
             <button onclick="toggleJsonView()">Toggle JSON</button>
+            <button onclick="triggerManualScrape()">Manual Scrape</button>
         </div>
         <div id="loading" class="loading" style="display: none;">Loading weather data...</div>
         <div id="error" class="error" style="display: none;"></div>
@@ -205,6 +206,29 @@
             <pre id="jsonContent"></pre>
         </div>
     </div>
+    <script>
+    async function triggerManualScrape() {
+        const loadingEl = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        loadingEl.style.display = 'block';
+        errorEl.style.display = 'none';
+        try {
+            const res = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || res.statusText || 'Request failed');
+            loadingEl.style.display = 'none';
+            alert('Scrape triggered successfully.');
+        } catch (err) {
+            loadingEl.style.display = 'none';
+            errorEl.style.display = 'block';
+            errorEl.textContent = 'Scrape failed: ' + err.message;
+        }
+    }
+    </script>
     <script src="/client.js"></script>
 </body>
 </html>

@@ -47,7 +47,8 @@ function formatDisplayDate(dateStr) {
   if (diffDays === -1) return 'Yesterday';
   if (diffDays === 0) return 'Today';
   if (diffDays === 1) return 'Tomorrow';
-  
+  if (diffDays === 2) return 'Day after tomorrow';
+
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
@@ -59,41 +60,44 @@ function displayWeather(data) {
   
   let html = `<div class="area-name">📍 ${areaName}</div>`;
 
-  // Hourly Forecast
+  // Hourly Forecast (grouped by date)
   html += '<div class="weather-card">';
   html += '<h2>Hourly Forecast</h2>';
   html += '<div class="hourly-grid">';
-  
+
   if (data.hourly && data.hourly.length > 0) {
-    data.hourly.forEach((item) => {
-      html += '<div class="hourly-item">';
-      html += `<div class="day-period">${formatDisplayDate(item.forecast_date)} - ${item.period}</div>`;
-      
-      if (item.weather_image) {
-        const imageUrl = item.weather_image.startsWith('http')
-          ? item.weather_image
-          : `http://cambodiameteo.com${item.weather_image}`;
-        html += `<img src="${imageUrl}" alt="${item.weather_value || 'Weather'}" class="weather-icon" onerror="this.style.display='none'">`;
-      }
-      
-      html += `<div class="data-row"><span class="label">Temperature:</span><span class="value">${item.temperature || 'N/A'}°C</span></div>`;
-      html += `<div class="data-row"><span class="label">Humidity:</span><span class="value">${item.humidity || 'N/A'}%</span></div>`;
-      html += `<div class="data-row"><span class="label">Wind Speed:</span><span class="value">${item.wind_speed || 'N/A'} Kph</span></div>`;
-      
-      if (item.wind_direction_value) {
-        html += `<div class="data-row"><span class="label">Wind Direction:</span><span class="value">${item.wind_direction_value}</span></div>`;
-      }
-      
-      if (item.weather_value) {
-        html += `<div class="data-row"><span class="label">Weather:</span><span class="value">${item.weather_value}</span></div>`;
-      }
-      
+    // Group by forecast_date
+    const grouped = data.hourly.reduce((acc, item) => {
+      acc[item.forecast_date] = acc[item.forecast_date] || [];
+      acc[item.forecast_date].push(item);
+      return acc;
+    }, {});
+
+    // Sort dates descending (most recent first)
+    const dates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+    dates.forEach((date) => {
+      html += `<div class="hourly-item"><div class="day-period">${formatDisplayDate(date)}</div>`;
+      // Sort by period order: Morning, Afternoon, Night
+      const order = { Morning: 0, Afternoon: 1, Night: 2 };
+      grouped[date].sort((x, y) => (order[x.period] ?? 0) - (order[y.period] ?? 0));
+
+      grouped[date].forEach((item) => {
+        html += `<div class="data-row"><span class="label">${item.period}:</span><span class="value">`;
+        if (item.weather_image) {
+          const imageUrl = item.weather_image.startsWith('http') ? item.weather_image : `http://cambodiameteo.com${item.weather_image}`;
+          html += `<img src="${imageUrl}" alt="${item.weather_value || 'Weather'}" class="weather-icon" onerror="this.style.display='none'"> `;
+        }
+        html += `${item.temperature || 'N/A'}°C | ${item.humidity || 'N/A'}% | ${item.wind_speed || 'N/A'} Kph`;
+        html += `</span></div>`;
+      });
+
       html += '</div>';
     });
   } else {
     html += '<div class="hourly-item">No hourly forecast data available</div>';
   }
-  
+
   html += '</div></div>';
 
   // Daily Forecast

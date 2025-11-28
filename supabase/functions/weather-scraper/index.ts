@@ -26,21 +26,21 @@ function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Helper function to get date for yesterday, today, tomorrow
+// Helper function to get date for Today, Tomorrow, or DayAfter (columns are today, tomorrow, day after)
 function getDateForDay(dayString: string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  if (dayString === 'Yesterday') {
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return formatDate(yesterday);
-  } else if (dayString === 'Today') {
+
+  if (dayString === 'Today') {
     return formatDate(today);
   } else if (dayString === 'Tomorrow') {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     return formatDate(tomorrow);
+  } else if (dayString === 'DayAfter') {
+    const dayAfter = new Date(today);
+    dayAfter.setDate(dayAfter.getDate() + 2);
+    return formatDate(dayAfter);
   }
   return formatDate(today);
 }
@@ -103,8 +103,8 @@ serve(async (req) => {
           continue;
         }
 
-        // Extract data
-        const days = ['Yesterday', 'Today', 'Tomorrow'];
+        // Extract data (columns correspond to today, tomorrow, day after)
+        const days = ['Today', 'Tomorrow', 'DayAfter'];
         const periods = ['Morning', 'Afternoon', 'Night'];
         const rows = $('table.WM tr');
         
