@@ -11,6 +11,47 @@ import { config } from '../config/index.js';
 
 const logger = createLogger('WeatherScraperService');
 
+// Khmer translations for period and wind direction values.
+const PERIOD_MAP = {
+  morning: 'ព្រឹក',
+  afternoon: 'ថ្ងៃ',
+  night: 'យប់',
+  'ព្រឹក': 'ព្រឹក',
+  'ថ្ងៃ': 'ថ្ងៃ',
+  'យប់': 'យប់'
+};
+
+const WIND_DIR_MAP = {
+  west: 'លិច',
+  east: 'កើត',
+  north: 'ជើង',
+  south: 'ត្បូង',
+  'north east': 'ភាគឦសាន',
+  northeast: 'ភាគឦសាន',
+  'south east': 'ភាគអាគ្នេយ៍',
+  southeast: 'ភាគអាគ្នេយ៍',
+  'north west': 'ភាគពាយ័ព្យ',
+  northwest: 'ភាគពាយ័ព្យ',
+  'south west': 'ភាគនិរតី',
+  southwest: 'ភាគនិរតី',
+  'ភាគឦសាន': 'ភាគឦសាន',
+  'ភាគអាគ្នេយ៍': 'ភាគអាគ្នេយ៍',
+  'ភាគពាយ័ព្យ': 'ភាគពាយ័ព្យ',
+  'ភាគនិរតី': 'ភាគនិរតី'
+};
+
+function translatePeriod(raw) {
+  if (!raw && raw !== '') return raw;
+  const key = String(raw).trim().toLowerCase();
+  return PERIOD_MAP[key] || raw;
+}
+
+function translateWindDirection(raw) {
+  if (!raw && raw !== '') return raw;
+  const key = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+  return WIND_DIR_MAP[key] || raw;
+}
+
 /**
  * Clean up old weather data from database
  * Removes data older than configured retention days
@@ -103,8 +144,12 @@ function parseHourlyForecast($, areaId) {
     if (cells.length < 8) return;
 
     const dayText = $(cells[0]).text().trim();
-    const period = $(cells[1]).text().trim();
+    const rawPeriod = $(cells[1]).text().trim();
+    const period = translatePeriod(rawPeriod);
     const forecastDate = getDateForDay(dayText);
+
+    const rawWindDir = $(cells[5]).text().trim();
+    const windDirValue = translateWindDirection(rawWindDir);
 
     const record = {
       area_id: areaId,
@@ -113,7 +158,7 @@ function parseHourlyForecast($, areaId) {
       humidity: $(cells[2]).text().trim(),
       temperature: $(cells[3]).text().trim(),
       wind_speed: $(cells[4]).text().trim(),
-      wind_direction_value: $(cells[5]).text().trim(),
+      wind_direction_value: windDirValue,
       wind_direction_image: $(cells[5]).find('img').attr('src') || null,
       weather_value: $(cells[6]).text().trim(),
       weather_image: $(cells[7]).find('img').attr('src') || null,
@@ -238,11 +283,16 @@ function parseHourlyForecast($, areaId) {
       hourlyData.push({
         area_id: areaId,
         forecast_date: formatDate(forecastDate),
-        period: periods[periodIndex],
+        period: translatePeriod(periods[periodIndex]),
         humidity: typeof humidityValues[index] === 'string' ? humidityValues[index] : null,
         temperature: typeof temperatureValues[index] === 'string' ? temperatureValues[index] : null,
         wind_speed: typeof windSpeedValues[index] === 'string' ? windSpeedValues[index] : null,
-        wind_direction_value: typeof windDir === 'object' ? windDir.value : null,
+        wind_direction_value:
+          typeof windDir === 'object'
+            ? translateWindDirection(windDir.value)
+            : typeof windDir === 'string'
+            ? translateWindDirection(windDir)
+            : null,
         wind_direction_image: typeof windDir === 'object' ? windDir.image : null,
         weather_value: typeof weather === 'object' ? weather.value : null,
         weather_image: typeof weather === 'object' ? weather.image : null,

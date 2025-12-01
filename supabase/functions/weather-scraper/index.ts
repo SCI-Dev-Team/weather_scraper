@@ -18,6 +18,47 @@ const PROVINCE_NAMES_EN: Record<number, string> = {
   32: "Tboung Khmum"
 };
 
+// Khmer translations for period and wind direction values.
+const PERIOD_MAP: Record<string, string> = {
+  morning: 'ព្រឹក',
+  afternoon: 'ថ្ងៃ',
+  night: 'យប់',
+  'ព្រឹក': 'ព្រឹក',
+  'ថ្ងៃ': 'ថ្ងៃ',
+  'យប់': 'យប់'
+};
+
+const WIND_DIR_MAP: Record<string, string> = {
+  west: 'លិច',
+  east: 'កើត',
+  north: 'ជើង',
+  south: 'ត្បូង',
+  'north east': 'ភាគឦសាន',
+  northeast: 'ភាគឦសាន',
+  'south east': 'ភាគអាគ្នេយ៍',
+  southeast: 'ភាគអាគ្នេយ៍',
+  'north west': 'ភាគពាយ័ព្យ',
+  northwest: 'ភាគពាយ័ព្យ',
+  'south west': 'ភាគនិរតី',
+  southwest: 'ភាគនិរតី',
+  'ភាគឦសាន': 'ភាគឦសាន',
+  'ភាគអាគ្នេយ៍': 'ភាគអាគ្នេយ៍',
+  'ភាគពាយ័ព្យ': 'ភាគពាយ័ព្យ',
+  'ភាគនិរតី': 'ភាគនិរតី'
+};
+
+function translatePeriod(raw: string | undefined | null): string | undefined | null {
+  if (raw === undefined || raw === null) return raw;
+  const key = String(raw).trim().toLowerCase();
+  return PERIOD_MAP[key] || raw;
+}
+
+function translateWindDirection(raw: string | undefined | null): string | undefined | null {
+  if (raw === undefined || raw === null) return raw;
+  const key = String(raw).trim().toLowerCase().replace(/\s+/g, ' ');
+  return WIND_DIR_MAP[key] || raw;
+}
+
 // Helper function to format date as YYYY-MM-DD
 function formatDate(date: Date): string {
   const year = date.getFullYear();
@@ -151,11 +192,16 @@ serve(async (req) => {
             hourlyRecords.push({
               area_id: areaId,
               forecast_date: getDateForDay(day),
-              period: period,
+              period: translatePeriod(period),
               humidity: typeof humidityValues[index] === 'string' ? humidityValues[index] : null,
               temperature: typeof temperatureValues[index] === 'string' ? temperatureValues[index] : null,
               wind_speed: typeof windSpeedValues[index] === 'string' ? windSpeedValues[index] : null,
-              wind_direction_value: typeof windDir === 'object' ? windDir.value : null,
+              wind_direction_value:
+                typeof windDir === 'object'
+                  ? translateWindDirection(windDir.value)
+                  : typeof windDir === 'string'
+                  ? translateWindDirection(windDir)
+                  : null,
               wind_direction_image: typeof windDir === 'object' ? windDir.image : null,
               weather_value: typeof weather === 'object' ? weather.value : null,
               weather_image: typeof weather === 'object' ? weather.image : null,
