@@ -11,6 +11,7 @@
     "scrape:windy": "node scripts/scrape-windy.js",
     "scrape:windy:aq": "node scripts/scrape-windy.js --air-quality",
     "scrape:windy:all": "node scripts/scrape-windy.js --all",
+    "scrape:all": "node scripts/scrape-all.js",
     "lint": "eslint src/ scripts/",
     "lint:fix": "eslint src/ scripts/ --fix",
     "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.js\" \"*.json\" \"*.md\"",

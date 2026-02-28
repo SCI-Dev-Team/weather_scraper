@@ -17,6 +17,14 @@
     {
       "path": "/api/scrape",
       "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/windy/scrape",
+      "schedule": "5 18 * * *"
+    },
+    {
+      "path": "/api/windy/air-quality/scrape",
+      "schedule": "10 18 * * *"
     }
   ]
 }

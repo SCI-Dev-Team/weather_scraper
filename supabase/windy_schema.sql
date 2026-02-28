@@ -65,29 +65,6 @@ CREATE TABLE IF NOT EXISTS windy_air_quality (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ─── 3. Windy Webcams Table ──────────────────────────────────────────────
--- Stores webcam metadata from Windy Webcams API v3
-CREATE TABLE IF NOT EXISTS windy_webcams (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  webcam_id TEXT UNIQUE NOT NULL,
-  area_id INTEGER REFERENCES areas(area_id) ON DELETE SET NULL,
-  title TEXT,
-  status TEXT,                -- 'active', 'inactive'
-  latitude FLOAT,
-  longitude FLOAT,
-  city TEXT,
-  region TEXT,
-  country TEXT,
-  country_code TEXT,
-  continent TEXT,
-  image_current TEXT,         -- URL to current preview image
-  image_daylight TEXT,        -- URL to daylight preview image
-  categories TEXT,            -- Comma-separated category IDs
-  last_updated TIMESTAMPTZ,
-
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Indexes
@@ -105,18 +82,12 @@ CREATE INDEX IF NOT EXISTS idx_windy_aq_area_id ON windy_air_quality(area_id);
 CREATE INDEX IF NOT EXISTS idx_windy_aq_area_date ON windy_air_quality(area_id, forecast_date);
 CREATE INDEX IF NOT EXISTS idx_windy_aq_date ON windy_air_quality(forecast_date);
 
--- Webcam indexes
-CREATE INDEX IF NOT EXISTS idx_windy_webcams_area_id ON windy_webcams(area_id);
-CREATE INDEX IF NOT EXISTS idx_windy_webcams_webcam_id ON windy_webcams(webcam_id);
-CREATE INDEX IF NOT EXISTS idx_windy_webcams_location ON windy_webcams(latitude, longitude);
-
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Row Level Security (RLS)
 -- ═══════════════════════════════════════════════════════════════════════════
 
 ALTER TABLE windy_forecast ENABLE ROW LEVEL SECURITY;
 ALTER TABLE windy_air_quality ENABLE ROW LEVEL SECURITY;
-ALTER TABLE windy_webcams ENABLE ROW LEVEL SECURITY;
 
 -- Service role full access
 CREATE POLICY "Service role can do everything on windy_forecast" ON windy_forecast
@@ -125,15 +96,9 @@ CREATE POLICY "Service role can do everything on windy_forecast" ON windy_foreca
 CREATE POLICY "Service role can do everything on windy_air_quality" ON windy_air_quality
   FOR ALL USING (auth.role() = 'service_role');
 
-CREATE POLICY "Service role can do everything on windy_webcams" ON windy_webcams
-  FOR ALL USING (auth.role() = 'service_role');
-
 -- Public read access
 CREATE POLICY "Allow public read access to windy_forecast" ON windy_forecast
   FOR SELECT USING (true);
 
 CREATE POLICY "Allow public read access to windy_air_quality" ON windy_air_quality
-  FOR SELECT USING (true);
-
-CREATE POLICY "Allow public read access to windy_webcams" ON windy_webcams
   FOR SELECT USING (true);

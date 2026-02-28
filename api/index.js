@@ -6,6 +6,11 @@ import {
   handlePostScrape,
   handleGetScrapeStatus,
   handleGetProvinces,
+  handleGetWindyForecast,
+  handlePostWindyScrape,
+  handleGetWindyScrapeStatus,
+  handleGetWindyAirQuality,
+  handlePostWindyAirQualityScrape,
 } from '../src/api/routes.js';
 import fs from 'fs';
 import path from 'path';
@@ -45,6 +50,27 @@ export default async function handler(req, res) {
 
     if (pathname === '/api/provinces' && req.method === 'GET') {
       return handleGetProvinces(res);
+    }
+
+    // ── Windy API Routes ─────────────────────────────────────────────
+    if (pathname === '/api/windy/forecast' && req.method === 'GET') {
+      return handleGetWindyForecast(url, res);
+    }
+
+    if (pathname === '/api/windy/scrape' && req.method === 'POST') {
+      return handlePostWindyScrape(url, res);
+    }
+
+    if (pathname === '/api/windy/scrape/status' && req.method === 'GET') {
+      return handleGetWindyScrapeStatus(res);
+    }
+
+    if (pathname === '/api/windy/air-quality' && req.method === 'GET') {
+      return handleGetWindyAirQuality(url, res);
+    }
+
+    if (pathname === '/api/windy/air-quality/scrape' && req.method === 'POST') {
+      return handlePostWindyAirQualityScrape(url, res);
     }
 
     if (pathname === '/api/health' && req.method === 'GET') {
