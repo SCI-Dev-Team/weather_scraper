@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Supabase Edge Function for Weather Scraping
 // This runs on Deno (not Node.js), so we use Deno-compatible imports
 

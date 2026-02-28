@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Supabase Edge Function for Windy Weather Scraping
 // Runs on Deno — fetches Windy Point Forecast + Air Quality data for all Cambodian provinces
 
