@@ -20,6 +20,13 @@ export const config = {
     requestTimeout: 30000, // 30 seconds
   },
 
+  // Windy API Configuration
+  // Get keys at: https://api.windy.com/keys
+  windy: {
+    apiKey: process.env.WINDY_API_KEY, // Point Forecast API key
+    webcamsApiKey: process.env.WINDY_WEBCAMS_API_KEY || process.env.WINDY_API_KEY, // Webcams API key (separate or shared)
+  },
+
   cors: {
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['*'],
   },
