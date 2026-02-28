@@ -6,7 +6,6 @@
  *   node scripts/scrape-windy.js                    # Scrape all forecasts
  *   node scripts/scrape-windy.js --area 9            # Scrape Phnom Penh only
  *   node scripts/scrape-windy.js --air-quality       # Scrape air quality (CAMS)
- *   node scripts/scrape-windy.js --webcams           # Scrape webcams
  *   node scripts/scrape-windy.js --all               # Scrape everything
  */
 import {
@@ -14,8 +13,6 @@ import {
   scrapeWindyProvince,
   scrapeWindyAirQualityAll,
   scrapeWindyAirQuality,
-  scrapeAllCambodiaWebcams,
-  scrapeWebcamsForProvince,
 } from '../src/services/windyScraper.js';
 import { validateConfig } from '../src/config/index.js';
 import { validateDatabaseConnection } from '../src/config/database.js';
@@ -29,7 +26,6 @@ function parseArgs() {
   const options = {
     area: null,
     airQuality: false,
-    webcams: false,
     all: false,
     force: false,
     forecast: true, // default action
@@ -46,16 +42,10 @@ function parseArgs() {
         options.airQuality = true;
         options.forecast = false;
         break;
-      case '--webcams':
-      case '-w':
-        options.webcams = true;
-        options.forecast = false;
-        break;
       case '--all':
         options.all = true;
         options.forecast = true;
         options.airQuality = true;
-        options.webcams = true;
         break;
       case '--force':
       case '-f':
@@ -72,8 +62,7 @@ Usage:
 Options:
   --area, -a <id>    Scrape a specific province (e.g., --area 9 for Phnom Penh)
   --air-quality, --aq  Scrape air quality data (CAMS model)
-  --webcams, -w      Scrape webcam data
-  --all              Scrape everything (forecast + air quality + webcams)
+  --all              Scrape everything (forecast + air quality)
   --force, -f        Force re-scrape even if already scraped today
   --help, -h         Show this help message
         `);
@@ -161,17 +150,6 @@ async function main() {
       } else {
         logger.info(`  Successful: ${aqResult.successful} (${aqResult.skipped} skipped), Failed: ${aqResult.failed}`);
       }
-    }
-
-    // ── Webcam scraping ────────────────────────────────────────────────
-    if (options.webcams || options.all) {
-      logger.info('\n--- Webcam Scraping ---');
-
-      const webcamResult = options.area
-        ? await scrapeWebcamsForProvince(options.area)
-        : await scrapeAllCambodiaWebcams();
-
-      logger.info(`Webcams found: ${webcamResult.webcams || 0}`);
     }
 
     logger.info('\n========================');

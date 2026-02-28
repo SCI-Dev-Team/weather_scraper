@@ -7,11 +7,8 @@ import {
   scrapeWindyProvince,
   scrapeWindyAirQualityAll,
   scrapeWindyAirQuality,
-  scrapeAllCambodiaWebcams,
-  scrapeWebcamsForProvince,
   getWindyForecastData,
   getWindyAirQualityData,
-  getWebcamData,
 } from '../services/windyScraper.js';
 import { createLogger } from '../utils/logger.js';
 import { sendJson } from '../utils/response.js';
@@ -245,48 +242,4 @@ export async function handlePostWindyAirQualityScrape(url, res) {
   scrapePromise
     .then(result => logger.success('[Windy AQ] Scraping completed'))
     .catch(err => logger.error('[Windy AQ] Scraping failed:', err));
-}
-
-/**
- * Handle GET /api/windy/webcams
- * Get webcam data from database
- */
-export async function handleGetWindyWebcams(url, res) {
-  try {
-    const areaId = url.searchParams.get('areaId');
-    const limit = url.searchParams.get('limit');
-
-    const options = {};
-    if (areaId) options.areaId = parseInt(areaId);
-    if (limit) options.limit = parseInt(limit);
-
-    const result = await getWebcamData(options);
-    sendJson(res, result.success ? 200 : 500, result);
-  } catch (error) {
-    logger.error('Error in GET /api/windy/webcams:', error.message);
-    sendJson(res, 500, { success: false, error: error.message });
-  }
-}
-
-/**
- * Handle POST /api/windy/webcams/scrape
- * Trigger webcam scraping
- */
-export async function handlePostWindyWebcamsScrape(url, res) {
-  const areaId = url.searchParams.get('areaId');
-
-  sendJson(res, 202, {
-    success: true,
-    message: areaId
-      ? `Webcam scraping started for area ${areaId}.`
-      : 'Webcam scraping started for all Cambodia.',
-  });
-
-  const scrapePromise = areaId
-    ? scrapeWebcamsForProvince(parseInt(areaId))
-    : scrapeAllCambodiaWebcams();
-
-  scrapePromise
-    .then(result => logger.success('[Webcams] Scraping completed'))
-    .catch(err => logger.error('[Webcams] Scraping failed:', err));
 }

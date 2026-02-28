@@ -10,7 +10,6 @@
     "scrape": "node scripts/scrape.js",
     "scrape:windy": "node scripts/scrape-windy.js",
     "scrape:windy:aq": "node scripts/scrape-windy.js --air-quality",
-    "scrape:windy:webcams": "node scripts/scrape-windy.js --webcams",
     "scrape:windy:all": "node scripts/scrape-windy.js --all",
     "lint": "eslint src/ scripts/",
     "lint:fix": "eslint src/ scripts/ --fix",
@@ -25,8 +24,7 @@
     "mowram",
     "forecast",
     "windy",
-    "air-quality",
-    "webcams"
+    "air-quality"
   ],
   "author": "",
   "license": "MIT",

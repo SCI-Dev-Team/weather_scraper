@@ -1,6 +1,6 @@
 /**
  * Cambodia Weather Dashboard – Client
- * Handles MOWRAM forecast, Windy forecast, Air Quality, and Webcams tabs
+ * Handles MOWRAM forecast, Windy forecast, and Air Quality tabs
  */
 const API_BASE = '/api';
 
@@ -9,7 +9,6 @@ let currentData = {
   mowram: null,
   windy: null,
   airQuality: null,
-  webcams: null,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -164,22 +163,19 @@ async function loadAllData() {
 
   try {
     // Fetch all sources in parallel
-    const [mowramRes, windyRes, aqRes, webcamRes] = await Promise.allSettled([
+    const [mowramRes, windyRes, aqRes] = await Promise.allSettled([
       fetch(`${API_BASE}/weather?areaId=${areaId}`).then(r => r.json()),
       fetch(`${API_BASE}/windy/forecast?areaId=${areaId}`).then(r => r.json()),
       fetch(`${API_BASE}/windy/air-quality?areaId=${areaId}`).then(r => r.json()),
-      fetch(`${API_BASE}/windy/webcams?areaId=${areaId}`).then(r => r.json()),
     ]);
 
     currentData.mowram = mowramRes.status === 'fulfilled' && mowramRes.value.success ? mowramRes.value.data : null;
     currentData.windy = windyRes.status === 'fulfilled' && windyRes.value.success ? windyRes.value.data : null;
     currentData.airQuality = aqRes.status === 'fulfilled' && aqRes.value.success ? aqRes.value.data : null;
-    currentData.webcams = webcamRes.status === 'fulfilled' && webcamRes.value.success ? webcamRes.value.data : null;
 
     renderMowram(currentData.mowram);
     renderWindyForecast(currentData.windy);
     renderAirQuality(currentData.airQuality);
-    renderWebcams(currentData.webcams);
     updateJsonView();
   } catch (err) {
     showError('Failed to load data: ' + err.message);
@@ -397,43 +393,6 @@ function renderAirQuality(data) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Render: Webcams
-// ═══════════════════════════════════════════════════════════════════════════
-
-function renderWebcams(data) {
-  const el = document.getElementById('webcamContent');
-
-  if (!data || data.length === 0) {
-    el.innerHTML = emptyState('📷', 'No webcams found for this area. Try scraping webcams first.');
-    return;
-  }
-
-  const areaName = getAreaName();
-  let html = `<div class="area-badge">📍 ${areaName} — Nearby Webcams</div>`;
-  html += `<div class="card"><div class="card-header"><h2>📷 Webcams (${data.length})</h2></div><div class="card-body"><div class="grid-3">`;
-
-  data.forEach(cam => {
-    const imgUrl = cam.image_current || cam.image_daylight || '';
-    const statusClass = cam.status === 'active' ? 'active' : 'inactive';
-    const statusLabel = cam.status === 'active' ? '● Active' : '○ Inactive';
-    const location = [cam.city, cam.region].filter(Boolean).join(', ') || 'Unknown location';
-
-    html += `<div class="webcam-card">
-      ${imgUrl ? `<img src="${imgUrl}" alt="${cam.title || 'Webcam'}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 160%22><rect fill=%22%23eee%22 width=%22200%22 height=%22160%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22 font-size=%2214%22>No Image</text></svg>'">` : '<div style="height:160px;background:#eee;display:flex;align-items:center;justify-content:center;color:#aaa;">No Image</div>'}
-      <div class="webcam-info">
-        <div class="wc-title">${cam.title || 'Untitled Webcam'}</div>
-        <div class="wc-location">📍 ${location}</div>
-        <span class="wc-status ${statusClass}">${statusLabel}</span>
-        ${cam.categories ? `<div style="font-size:0.75em;color:var(--text-light);margin-top:4px;">🏷️ ${cam.categories}</div>` : ''}
-      </div>
-    </div>`;
-  });
-
-  html += '</div></div></div>';
-  el.innerHTML = html;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
 // JSON View
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -444,7 +403,6 @@ function updateJsonView() {
     mowram: currentData.mowram,
     windy_forecast: currentData.windy,
     air_quality: currentData.airQuality,
-    webcams: currentData.webcams,
   };
   document.getElementById('jsonContent').textContent = JSON.stringify(display, null, 2);
 }

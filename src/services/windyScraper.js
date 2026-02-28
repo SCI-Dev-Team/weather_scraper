@@ -1,10 +1,10 @@
 /**
  * Windy API Scraping Service
- * Fetches weather data from Windy's Point Forecast API and Webcams API
+ * Fetches weather data from Windy's Point Forecast API
  *
  * Available Windy APIs integrated:
  *   1. Point Forecast API  – detailed hourly forecasts per coordinate
- *   2. Webcams API         – nearby webcam images/timelapse per location
+ *   2. Air Quality (CAMS)  – SO₂, dust, CO forecasts
  *
  * Note: Map Forecast API is a frontend tile service (not data-scraping).
  *       Windy Plugins API is a client-side SDK for embedding Windy maps.
@@ -15,7 +15,6 @@ import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { formatDate } from '../utils/dateHelpers.js';
 import {
-  WINDY_ENDPOINTS,
   WINDY_MODELS,
   DEFAULT_MODEL,
   DEFAULT_PARAMETERS,
@@ -24,8 +23,6 @@ import {
   DEFAULT_LEVELS,
   PROVINCE_COORDINATES,
   COASTAL_PROVINCE_IDS,
-  CAMBODIA_BOUNDS,
-  WEBCAM_SEARCH_RADIUS_KM,
   PRECIP_TYPE_MAP,
   windFromComponents,
 } from '../constants/windyConfig.js';
@@ -511,152 +508,6 @@ export async function scrapeWindyAirQualityAll(options = {}) {
   return results;
 }
 
-// ─── Webcams API ───────────────────────────────────────────────────────────
-
-/**
- * Fetch webcams near a coordinate from Windy Webcams API v3
- * @param {number} lat
- * @param {number} lon
- * @param {number} radiusKm
- * @param {number} limit
- * @returns {Promise<Object>} Webcams API response
- */
-export async function fetchNearbyWebcams(lat, lon, radiusKm = WEBCAM_SEARCH_RADIUS_KM, limit = 10) {
-  const url = new URL(WINDY_ENDPOINTS.webcams);
-  url.searchParams.set('nearby', `${lat},${lon},${radiusKm}`);
-  url.searchParams.set('limit', limit);
-  url.searchParams.set('include', 'images,location,categories');
-
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'x-windy-api-key': config.windy.webcamsApiKey || config.windy.apiKey,
-    },
-    signal: AbortSignal.timeout(config.scraper.requestTimeout),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Windy Webcams API ${response.status}: ${errorText}`);
-  }
-
-  return response.json();
-}
-
-/**
- * Fetch all webcams within Cambodia bounding box
- * @param {number} limit
- * @returns {Promise<Object>}
- */
-export async function fetchCambodiaWebcams(limit = 50) {
-  const { lat_min, lat_max, lon_min, lon_max } = CAMBODIA_BOUNDS;
-  const url = new URL(WINDY_ENDPOINTS.webcams);
-  url.searchParams.set('bbox', `${lat_max},${lon_min},${lat_min},${lon_max}`);
-  url.searchParams.set('limit', limit);
-  url.searchParams.set('include', 'images,location,categories');
-
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    headers: {
-      'x-windy-api-key': config.windy.webcamsApiKey || config.windy.apiKey,
-    },
-    signal: AbortSignal.timeout(config.scraper.requestTimeout),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Windy Webcams API ${response.status}: ${errorText}`);
-  }
-
-  return response.json();
-}
-
-/**
- * Transform webcam API response into database records
- */
-function transformWebcams(raw, areaId = null) {
-  if (!raw || !raw.webcams) return [];
-
-  return raw.webcams.map(cam => ({
-    webcam_id: cam.webcamId || cam.id,
-    area_id: areaId,
-    title: cam.title || null,
-    status: cam.status || null,
-    latitude: cam.location?.latitude ?? cam.latitude ?? null,
-    longitude: cam.location?.longitude ?? cam.longitude ?? null,
-    city: cam.location?.city ?? null,
-    region: cam.location?.region ?? null,
-    country: cam.location?.country ?? null,
-    country_code: cam.location?.countryCode ?? null,
-    continent: cam.location?.continent ?? null,
-    image_current: cam.images?.current?.preview ?? cam.images?.current?.thumbnail ?? null,
-    image_daylight: cam.images?.daylight?.preview ?? cam.images?.daylight?.thumbnail ?? null,
-    categories: cam.categories ? cam.categories.map(c => c.id || c).join(',') : null,
-    last_updated: cam.lastUpdatedOn ? new Date(cam.lastUpdatedOn * 1000).toISOString() : null,
-  }));
-}
-
-/**
- * Scrape and save webcams near a specific province
- * @param {number} areaId
- * @returns {Promise<Object>}
- */
-export async function scrapeWebcamsForProvince(areaId) {
-  const coords = PROVINCE_COORDINATES[areaId];
-  if (!coords) {
-    return { success: false, error: `Unknown area ID: ${areaId}`, areaId };
-  }
-
-  try {
-    logger.info(`[Webcams] Fetching webcams near ${coords.name}...`);
-
-    const raw = await fetchNearbyWebcams(coords.lat, coords.lon);
-    const records = transformWebcams(raw, areaId);
-
-    if (records.length > 0) {
-      // Upsert by webcam_id to avoid duplicates
-      const { error } = await supabase
-        .from('windy_webcams')
-        .upsert(records, { onConflict: 'webcam_id' });
-
-      if (error) throw error;
-    }
-
-    logger.success(`[Webcams] ${coords.name}: ${records.length} webcams saved`);
-    return { success: true, areaId, provinceName: coords.name, webcams: records.length };
-  } catch (error) {
-    logger.error(`[Webcams] Failed for ${coords.name}:`, error.message);
-    return { success: false, error: error.message, areaId, provinceName: coords.name };
-  }
-}
-
-/**
- * Scrape all webcams across Cambodia
- * @returns {Promise<Object>}
- */
-export async function scrapeAllCambodiaWebcams() {
-  logger.info('[Webcams] Fetching all webcams in Cambodia...');
-
-  try {
-    const raw = await fetchCambodiaWebcams();
-    const records = transformWebcams(raw);
-
-    if (records.length > 0) {
-      const { error } = await supabase
-        .from('windy_webcams')
-        .upsert(records, { onConflict: 'webcam_id' });
-
-      if (error) throw error;
-    }
-
-    logger.success(`[Webcams] Cambodia: ${records.length} webcams saved`);
-    return { success: true, webcams: records.length, timestamp: new Date().toISOString() };
-  } catch (error) {
-    logger.error('[Webcams] Failed:', error.message);
-    return { success: false, error: error.message };
-  }
-}
-
 // ─── Data Retrieval ────────────────────────────────────────────────────────
 
 /**
@@ -712,33 +563,6 @@ export async function getWindyAirQualityData(options = {}) {
     return { success: true, data };
   } catch (error) {
     logger.error('Failed to get air quality data:', error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Get webcam data from database
- * @param {Object} options - { areaId, limit }
- * @returns {Promise<Object>}
- */
-export async function getWebcamData(options = {}) {
-  try {
-    const { areaId, limit } = options;
-
-    let query = supabase
-      .from('windy_webcams')
-      .select('*')
-      .order('last_updated', { ascending: false });
-
-    if (areaId) query = query.eq('area_id', areaId);
-    if (limit) query = query.limit(limit);
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    return { success: true, data };
-  } catch (error) {
-    logger.error('Failed to get webcam data:', error.message);
     return { success: false, error: error.message };
   }
 }

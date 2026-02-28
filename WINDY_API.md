@@ -9,9 +9,8 @@ This document covers the Windy API integration for the Cambodia Weather Scraper,
 - [Overview](#overview)
 - [Setup](#setup)
 - [1. Point Forecast API](#1-point-forecast-api)
-- [2. Webcams API](#2-webcams-api)
-- [3. Map Forecast API (Frontend)](#3-map-forecast-api-frontend)
-- [4. Windy Plugins API (Frontend)](#4-windy-plugins-api-frontend)
+- [2. Map Forecast API (Frontend)](#2-map-forecast-api-frontend)
+- [3. Windy Plugins API (Frontend)](#3-windy-plugins-api-frontend)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
 - [Important Data You Can Scrape](#important-data-you-can-scrape)
@@ -23,7 +22,6 @@ This document covers the Windy API integration for the Cambodia Weather Scraper,
 | Windy API          | Type          | Integrated | What It Provides                                    |
 | ------------------ | ------------- | ---------- | --------------------------------------------------- |
 | Point Forecast API | Backend/Data  | ✅ Yes     | Hourly weather forecasts for any coordinate          |
-| Webcams API        | Backend/Data  | ✅ Yes     | Webcam images, locations, timelapse worldwide        |
 | Map Forecast API   | Frontend/Tile | 📋 Docs   | Weather map overlay tiles (wind, rain, clouds, etc.) |
 | Windy Plugins API  | Frontend/SDK  | 📋 Docs   | Embeddable interactive Windy maps                    |
 
@@ -36,14 +34,12 @@ This document covers the Windy API integration for the Cambodia Weather Scraper,
 Go to **https://api.windy.com/keys** and create:
 
 - A **Point Forecast API** key
-- A **Webcams API** key (or use the same key if your plan covers both)
 
 ### 2. Add to `.env`
 
 ```env
 # Windy API Keys
 WINDY_API_KEY=your_point_forecast_api_key_here
-WINDY_WEBCAMS_API_KEY=your_webcams_api_key_here   # Optional, falls back to WINDY_API_KEY
 ```
 
 ### 3. Run Database Migration
@@ -119,51 +115,7 @@ curl "http://localhost:3001/api/windy/air-quality?areaId=9"
 
 ---
 
-## 2. Webcams API
-
-**Endpoint:** `GET https://api.windy.com/webcams/api/v3/webcams`
-
-Access the **world's largest webcam repository**. Each webcam includes:
-
-### What You Can Scrape
-
-| Data                | Description                                          |
-| ------------------- | ---------------------------------------------------- |
-| `webcam_id`         | Unique identifier                                    |
-| `title`             | Webcam name/description                              |
-| `status`            | Active or inactive                                   |
-| `latitude/longitude`| GPS coordinates                                      |
-| `city/region/country` | Location details                                   |
-| `image_current`     | URL to latest webcam snapshot                        |
-| `image_daylight`    | URL to latest daylight snapshot                      |
-| `categories`        | Tags: weather, landscape, beach, city, airport, etc. |
-| `last_updated`      | When the webcam last sent an image                   |
-
-### Search Methods
-
-- **Nearby search** — webcams within X km of a coordinate
-- **Bounding box** — all webcams within a geographic rectangle
-- **Country filter** — webcams in a specific country
-
-> ⚠️ **Note:** Image URLs contain time-limited tokens. Free tier tokens expire after **10 minutes**, professional tier after **24 hours**. Re-fetch webcam data when displaying images.
-
-### Usage Examples
-
-```bash
-# Scrape all Cambodia webcams
-curl -X POST http://localhost:3001/api/windy/webcams/scrape
-
-# Scrape webcams near a specific province
-curl -X POST "http://localhost:3001/api/windy/webcams/scrape?areaId=12"
-
-# Get webcam data
-curl "http://localhost:3001/api/windy/webcams"
-curl "http://localhost:3001/api/windy/webcams?areaId=12"
-```
-
----
-
-## 3. Map Forecast API (Frontend)
+## 2. Map Forecast API (Frontend)
 
 **Not a data-scraping API** — this provides **weather map tiles** for embedding visual weather maps.
 
@@ -205,7 +157,7 @@ The Map Forecast API is used with **Leaflet** or similar mapping libraries:
 
 ---
 
-## 4. Windy Plugins API (Frontend)
+## 3. Windy Plugins API (Frontend)
 
 **Not a data-scraping API** — this is a **JavaScript SDK** for embedding a fully interactive Windy map widget.
 
@@ -271,30 +223,17 @@ The Map Forecast API is used with **Leaflet** or similar mapping libraries:
 
 **Query parameters for GET:** `areaId`, `date`, `limit`
 
-### Webcams
-
-| Method | Endpoint                              | Description                        |
-| ------ | ------------------------------------- | ---------------------------------- |
-| GET    | `/api/windy/webcams`                  | Get webcam data from DB            |
-| POST   | `/api/windy/webcams/scrape`           | Scrape all Cambodia webcams        |
-| POST   | `/api/windy/webcams/scrape?areaId=12` | Scrape webcams near province       |
-
-**Query parameters for GET:** `areaId`, `limit`
-
 ---
 
 ## Database Schema
 
-Three new Supabase tables (see `supabase/windy_schema.sql`):
+Two Supabase tables (see `supabase/windy_schema.sql`):
 
 ### `windy_forecast`
 Stores hourly point forecast data with temperature, wind, precipitation, clouds, waves, and atmospheric data.
 
 ### `windy_air_quality`
 Stores CAMS model air quality forecasts (SO₂, dust, CO).
-
-### `windy_webcams`
-Stores webcam metadata, location, images, and categories.
 
 ---
 
@@ -309,7 +248,6 @@ Stores webcam metadata, location, images, and categories.
 5. **CAPE** — Thunderstorm/severe weather prediction
 6. **Wave Data** — Fishing safety for Sihanoukville, Kampot, Kep, Koh Kong
 7. **Air Quality (SO₂, Dust, CO)** — Public health, burning season monitoring
-8. **Webcam Imagery** — Real-time visual weather verification
 
 ### 📊 Unique Data Not Available from cambodiameteo.com
 
@@ -321,7 +259,6 @@ Stores webcam metadata, location, images, and categories.
 | CAPE (storms)   | ✅                   | ❌                           |
 | Wave data       | ✅                   | ❌                           |
 | Air quality     | ✅ (SO₂, dust, CO)   | ❌                           |
-| Webcam images   | ✅                   | ❌                           |
 | Pressure        | ✅                   | ❌                           |
 | Dew point       | ✅                   | ❌                           |
 | Precip type     | ✅                   | ❌                           |
@@ -330,9 +267,9 @@ Stores webcam metadata, location, images, and categories.
 
 ## Rate Limits
 
-| Plan        | Point Forecast         | Webcams              |
-| ----------- | ---------------------- | -------------------- |
-| Free        | ~1,000 requests/day    | ~1,000 requests/day  |
-| Professional| Higher limits          | Image tokens: 24h    |
+| Plan        | Point Forecast         |
+| ----------- | ---------------------- |
+| Free        | ~1,000 requests/day    |
+| Professional| Higher limits          |
 
 The scraper includes a 1-second delay between province requests to respect rate limits. Scraping all 25 provinces takes ~25 seconds.

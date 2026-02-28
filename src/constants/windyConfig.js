@@ -6,7 +6,6 @@
 // ── API Endpoints ──────────────────────────────────────────────────────────
 export const WINDY_ENDPOINTS = {
   pointForecast: 'https://api.windy.com/api/point-forecast/v2',
-  webcams: 'https://api.windy.com/webcams/api/v3/webcams',
 };
 
 // ── Forecast Models ────────────────────────────────────────────────────────
@@ -123,30 +122,6 @@ export const PROVINCE_COORDINATES = {
 export const COASTAL_PROVINCE_IDS = Object.entries(PROVINCE_COORDINATES)
   .filter(([_, coord]) => coord.coastal)
   .map(([id]) => parseInt(id));
-
-// ── Webcam Settings ────────────────────────────────────────────────────────
-// Cambodia bounding box for webcam searches
-export const CAMBODIA_BOUNDS = {
-  lat_min: 10.0,
-  lat_max: 14.7,
-  lon_min: 102.3,
-  lon_max: 107.7,
-};
-
-// Webcam search radius in km (for province-specific webcam search)
-export const WEBCAM_SEARCH_RADIUS_KM = 50;
-
-// Webcam categories relevant to weather
-export const WEBCAM_CATEGORIES = [
-  'weather',
-  'landscape',
-  'city',
-  'beach',
-  'lake',
-  'river',
-  'harbor',
-  'airport',
-];
 
 // ── Precipitation Type Mapping ─────────────────────────────────────────────
 export const PRECIP_TYPE_MAP = {
