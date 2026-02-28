@@ -1,15 +1,19 @@
-# MOWRAM Weather Scraper
+# Cambodia Weather Scraper
 
-A professional weather data scraping and API service for Cambodia's meteorological data from [cambodiameteo.com](http://cambodiameteo.com/forecast).
+A professional weather data scraping and API service for Cambodia — combining **MOWRAM** meteorological data from [cambodiameteo.com](http://cambodiameteo.com/forecast) and **Windy** forecast & air quality data from the [Windy Point Forecast API](https://api.windy.com/) for all 25 Cambodian provinces.
 
 ## 🌟 Features
 
-- **Automated Weather Scraping**: Fetches weather data for all 25 Cambodian provinces
-- **RESTful API**: Clean API endpoints for accessing weather data
-- **Data Persistence**: Stores data in Supabase with automatic cleanup
-- **Duplicate Prevention**: Smart checking to avoid redundant data scraping
+- **Dual Data Sources**: MOWRAM (HTML scraping) + Windy Point Forecast API (GFS/CAMS models)
+- **25 Province Coverage**: Full weather data for every Cambodian province
+- **Air Quality Monitoring**: SO₂, dust, and CO data via Windy CAMS model
+- **Coastal Wave Data**: Wave height, period, and direction for coastal provinces (gfsWave model)
+- **Automated Scheduling**: Daily cron jobs via GitHub Actions, Vercel Cron, and Supabase Edge Functions
+- **Duplicate Prevention**: Smart checking to avoid redundant data on every scrape
+- **RESTful API**: Clean endpoints for both MOWRAM and Windy data
+- **Data Persistence**: Supabase PostgreSQL with Row Level Security (RLS)
 - **Background Processing**: Non-blocking scraping operations
-- **Modern Architecture**: Modular, maintainable codebase following Node.js best practices
+- **Dashboard UI**: Tabbed interface with MOWRAM, Windy, and Air Quality views
 
 ## 📁 Project Structure
 
@@ -17,34 +21,48 @@ A professional weather data scraping and API service for Cambodia's meteorologic
 weather_scraper/
 ├── src/
 │   ├── api/
-│   │   └── routes.js          # API route handlers
+│   │   └── routes.js              # API route handlers (MOWRAM + Windy)
 │   ├── config/
-│   │   ├── database.js        # Database client & validation
-│   │   └── index.js           # Central configuration
+│   │   ├── database.js            # Supabase client & validation
+│   │   └── index.js               # Central configuration
 │   ├── constants/
-│   │   └── provinces.js       # Province mappings
+│   │   ├── provinces.js           # MOWRAM province mappings
+│   │   └── windyConfig.js         # Windy API config & province coordinates
 │   ├── services/
-│   │   └── weatherScraper.js  # Core scraping logic
+│   │   ├── weatherScraper.js      # MOWRAM scraping logic
+│   │   └── windyScraper.js        # Windy API scraping logic
 │   ├── utils/
-│   │   ├── dateHelpers.js     # Date utilities
-│   │   └── logger.js          # Logging utility
-│   └── server.js              # Main server entry point
+│   │   ├── dateHelpers.js         # Date utilities
+│   │   ├── logger.js              # Logging utility
+│   │   └── response.js            # HTTP response helpers
+│   └── server.js                  # HTTP server entry point
 ├── public/
-│   ├── index.html             # Frontend UI
-│   └── client.js              # Frontend JavaScript
+│   ├── index.html                 # Dashboard UI (tabbed)
+│   └── client.js                  # Frontend JavaScript
 ├── scripts/
-│   └── scrape.js              # CLI scraping script
-├── supabase/                  # Supabase related files
-│   ├── functions/             # Supabase Edge Functions
-│   └── supabase_schema.sql    # Database schema
-├── tests/                     # Test files (coming soon)
-├── .env.example               # Environment variables template
-├── .eslintrc.json            # ESLint configuration
-├── .prettierrc.json          # Prettier configuration
-├── .gitignore                # Git ignore rules
-├── package.json              # Project dependencies
-├── vercel.json               # Vercel deployment config
-└── README.md                 # This file
+│   ├── scrape.js                  # MOWRAM CLI scraper
+│   ├── scrape-windy.js            # Windy CLI scraper
+│   └── scrape-all.js              # Combined scraper (MOWRAM + Windy + AQ)
+├── api/
+│   └── index.js                   # Vercel serverless entry point
+├── supabase/
+│   ├── supabase_schema.sql        # MOWRAM database schema
+│   ├── windy_schema.sql           # Windy database schema
+│   └── functions/
+│       ├── weather-scraper/       # MOWRAM Supabase Edge Function (Deno)
+│       │   └── index.ts
+│       └── windy-scraper/         # Windy Supabase Edge Function (Deno)
+│           └── index.ts
+├── tests/
+│   └── weatherScraper.test.js     # Test files
+├── .github/
+│   └── workflows/
+│       └── weather-scraper.yml    # GitHub Actions daily cron
+├── .env.example                   # Environment variables template
+├── package.json                   # Project dependencies & scripts
+├── vercel.json                    # Vercel deployment & cron config
+├── WINDY_API.md                   # Windy API documentation
+└── README.md                      # This file
 ```
 
 ## 🚀 Quick Start
@@ -54,13 +72,14 @@ weather_scraper/
 - Node.js >= 18.0.0
 - npm or yarn
 - Supabase account and project
+- Windy API key ([get one here](https://api.windy.com/keys))
 
 ### Installation
 
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/SCI-Dev-Team/weather_scraper.git
    cd weather_scraper
    ```
 
@@ -76,20 +95,23 @@ weather_scraper/
    cp .env.example .env
    ```
 
-   Edit `.env` and add your Supabase credentials:
+   Edit `.env` with your credentials:
 
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+   WINDY_API_KEY=your-windy-api-key-here
    PORT=3001
    NODE_ENV=development
    ```
 
 4. **Set up database**
-   - Go to your Supabase project SQL Editor
-   - Run the SQL from `supabase/supabase_schema.sql`
+   - Go to your Supabase project **SQL Editor**
+   - Run `supabase/supabase_schema.sql` (MOWRAM tables)
+   - Run `supabase/windy_schema.sql` (Windy tables)
 
 5. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -98,103 +120,122 @@ The server will start at `http://localhost:3001`
 
 ## 📚 API Documentation
 
-### Get Weather Data
+### MOWRAM Endpoints
+
+#### Get Weather Data
 
 **GET** `/api/weather`
 
-Retrieve weather forecast data from the database.
-
-**Query Parameters:**
-
-- `areaId` (optional): Province area ID (1-24, 32)
-- `date` (optional): Date in YYYY-MM-DD format
-- `limit` (optional): Limit number of results
-
-**Example:**
+| Parameter | Type    | Description                         |
+| --------- | ------- | ----------------------------------- |
+| `areaId`  | integer | Province area ID (1–24, 32)         |
+| `date`    | string  | Date in YYYY-MM-DD format           |
+| `limit`   | integer | Limit number of results             |
 
 ```bash
-curl "http://localhost:3001/api/weather?areaId=9&date=2025-11-19"
+curl "http://localhost:3001/api/weather?areaId=9&date=2026-02-28"
 ```
 
-**Response:**
-
-```json
-{
-  "success": true,
-  "data": {
-    "hourly": [...],
-    "daily": [...]
-  }
-}
-```
-
-### Get All Provinces
+#### Get All Provinces
 
 **GET** `/api/provinces`
-
-Get list of all provinces/areas.
-
-**Example:**
 
 ```bash
 curl "http://localhost:3001/api/provinces"
 ```
 
-### Trigger Manual Scraping
+#### Trigger MOWRAM Scraping
 
 **POST** `/api/scrape`
-
-Manually trigger weather data scraping for all provinces.
-
-**Example:**
 
 ```bash
 curl -X POST "http://localhost:3001/api/scrape"
 ```
 
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "Scraping started in background. Check /api/scrape/status for progress."
-}
-```
-
-### Check Scraping Status
+#### Check MOWRAM Scraping Status
 
 **GET** `/api/scrape/status`
-
-Check the current scraping status and last result.
-
-**Example:**
 
 ```bash
 curl "http://localhost:3001/api/scrape/status"
 ```
 
-**Response:**
+---
 
-```json
-{
-  "isScrapingInProgress": false,
-  "lastScrapeResult": {
-    "total": 25,
-    "successful": 23,
-    "skipped": 2,
-    "failed": 0,
-    "timestamp": "2025-11-19T10:30:00.000Z"
-  }
-}
+### Windy Endpoints
+
+#### Get Windy Forecast Data
+
+**GET** `/api/windy/forecast`
+
+| Parameter | Type    | Description                         |
+| --------- | ------- | ----------------------------------- |
+| `areaId`  | integer | Province area ID (1–24, 32)         |
+| `date`    | string  | Date in YYYY-MM-DD format           |
+| `model`   | string  | Model name (`gfs`, `gfsWave`)       |
+| `limit`   | integer | Limit number of results             |
+
+```bash
+curl "http://localhost:3001/api/windy/forecast?areaId=9&model=gfs"
 ```
+
+#### Trigger Windy Forecast Scraping
+
+**POST** `/api/windy/scrape`
+
+| Parameter | Type    | Description                         |
+| --------- | ------- | ----------------------------------- |
+| `areaId`  | integer | Scrape a single province (optional) |
+| `force`   | boolean | Skip duplicate check (`true/false`) |
+
+```bash
+# All provinces
+curl -X POST "http://localhost:3001/api/windy/scrape"
+
+# Single province, force mode
+curl -X POST "http://localhost:3001/api/windy/scrape?areaId=9&force=true"
+```
+
+#### Check Windy Scraping Status
+
+**GET** `/api/windy/scrape/status`
+
+```bash
+curl "http://localhost:3001/api/windy/scrape/status"
+```
+
+#### Get Air Quality Data
+
+**GET** `/api/windy/air-quality`
+
+| Parameter | Type    | Description                         |
+| --------- | ------- | ----------------------------------- |
+| `areaId`  | integer | Province area ID (1–24, 32)         |
+| `date`    | string  | Date in YYYY-MM-DD format           |
+| `limit`   | integer | Limit number of results             |
+
+```bash
+curl "http://localhost:3001/api/windy/air-quality?areaId=9"
+```
+
+#### Trigger Air Quality Scraping
+
+**POST** `/api/windy/air-quality/scrape`
+
+| Parameter | Type    | Description                         |
+| --------- | ------- | ----------------------------------- |
+| `areaId`  | integer | Scrape a single province (optional) |
+| `force`   | boolean | Skip duplicate check (`true/false`) |
+
+```bash
+curl -X POST "http://localhost:3001/api/windy/air-quality/scrape"
+```
+
+---
 
 ### Health Check
 
 **GET** `/api/health`
-
-Check if the server is running.
-
-**Example:**
 
 ```bash
 curl "http://localhost:3001/api/health"
@@ -203,91 +244,170 @@ curl "http://localhost:3001/api/health"
 ## 🛠️ Available Scripts
 
 ```bash
-# Start production server
-npm start
+# ── Server ──────────────────────────────────────────
+npm start                 # Start production server
+npm run dev               # Start dev server with auto-reload
 
-# Start development server with auto-reload
-npm run dev
+# ── MOWRAM Scraping ────────────────────────────────
+npm run scrape            # Scrape MOWRAM weather data
 
-# Run weather scraping manually
-npm run scrape
+# ── Windy Scraping ─────────────────────────────────
+npm run scrape:windy      # Scrape Windy forecast (all provinces)
+npm run scrape:windy:aq   # Scrape Windy air quality (all provinces)
+npm run scrape:windy:all  # Scrape Windy forecast + air quality
 
-# Lint code
-npm run lint
+# ── Combined ───────────────────────────────────────
+npm run scrape:all        # Scrape everything (MOWRAM + Windy + AQ)
 
-# Fix lint issues automatically
-npm run lint:fix
+# ── Code Quality ───────────────────────────────────
+npm run lint              # Lint code
+npm run lint:fix          # Fix lint issues
+npm run format            # Format code with Prettier
+npm run format:check      # Check formatting
+```
 
-# Format code with Prettier
-npm run format
+### Windy CLI Options
 
-# Check code formatting
-npm run format:check
+```bash
+# Scrape a specific province
+node scripts/scrape-windy.js --area 9
+
+# Scrape air quality only
+node scripts/scrape-windy.js --air-quality
+
+# Scrape all data (forecast + air quality)
+node scripts/scrape-windy.js --all
+
+# Force scrape (skip duplicate check)
+node scripts/scrape-windy.js --all --force
 ```
 
 ## 🗂️ Database Schema
 
-### Tables
+### MOWRAM Tables (`supabase_schema.sql`)
 
-1. **areas** - Stores province information
-   - `id`: Serial primary key
-   - `area_id`: Unique area identifier
-   - `name`: Province name
-   - `created_at`: Timestamp
+| Table              | Description                              |
+| ------------------ | ---------------------------------------- |
+| `areas`            | Province info (area_id, name)            |
+| `hourly_forecast`  | Hourly forecasts (temperature, humidity, wind, weather) |
+| `daily_forecast`   | Daily summaries (min/max temperature & humidity) |
 
-2. **hourly_forecast** - Hourly weather forecasts
-   - `id`: UUID primary key
-   - `area_id`: References areas(area_id)
-   - `forecast_date`: Date (YYYY-MM-DD)
-   - `period`: Morning/Afternoon/Night
-   - `humidity`, `temperature`, `wind_speed`, etc.
-   - `created_at`: Timestamp
+### Windy Tables (`windy_schema.sql`)
 
-3. **daily_forecast** - Daily weather summaries
-   - `id`: UUID primary key
-   - `area_id`: References areas(area_id)
-   - `forecast_date`: Date (YYYY-MM-DD)
-   - `max_humidity`, `max_temperature`, etc.
-   - `created_at`: Timestamp
+| Table                | Description                              |
+| -------------------- | ---------------------------------------- |
+| `windy_forecast`     | Hourly GFS forecast data (temperature, wind, pressure, clouds, precipitation, waves) |
+| `windy_air_quality`  | CAMS air quality data (SO₂, dust, CO)    |
+
+All tables have:
+- **Row Level Security (RLS)** enabled
+- **Service role** has full CRUD access
+- **Public** has read-only access
+- **Indexes** on `area_id`, `forecast_date`, and composite keys
+
+## ⏰ Automated Scheduling
+
+The scraper runs automatically daily at **1:00 AM Cambodia time** (6:00 PM UTC) via three scheduling systems:
+
+### 1. GitHub Actions (`.github/workflows/weather-scraper.yml`)
+
+| Step | Script | Description |
+| ---- | ------ | ----------- |
+| 1    | `npm run scrape` | MOWRAM weather data |
+| 2    | `npm run scrape:windy:all` | Windy forecast + air quality |
+
+**Required GitHub Secrets:**
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `WINDY_API_KEY`
+
+### 2. Vercel Cron (`vercel.json`)
+
+| Time (UTC)  | Endpoint                       | Description          |
+| ----------- | ------------------------------ | -------------------- |
+| `0 18 * * *`  | `POST /api/scrape`            | MOWRAM scraping      |
+| `5 18 * * *`  | `POST /api/windy/scrape`      | Windy forecast       |
+| `10 18 * * *` | `POST /api/windy/air-quality/scrape` | Windy air quality |
+
+### 3. Supabase Edge Functions
+
+```bash
+# Deploy MOWRAM scraper
+supabase functions deploy weather-scraper
+
+# Deploy Windy scraper
+supabase functions deploy windy-scraper
+
+# Set Windy API key secret
+supabase secrets set WINDY_API_KEY=your-key-here
+```
 
 ## 🏗️ Architecture
 
-### Modular Design
+### Data Sources
 
-The project follows a clean, modular architecture:
+| Source  | Method         | Model(s)              | Data                                    |
+| ------- | -------------- | --------------------- | --------------------------------------- |
+| MOWRAM  | HTML scraping  | —                     | Temperature, humidity, wind, weather    |
+| Windy   | REST API (POST)| `gfs`                 | Temperature, wind, pressure, clouds, precipitation, CAPE |
+| Windy   | REST API (POST)| `gfsWave`             | Wave height, period, direction (coastal only) |
+| Windy   | REST API (POST)| `cams`                | SO₂, dust, CO (air quality)             |
 
-- **Config Layer**: Centralized configuration and environment management
-- **Service Layer**: Business logic for weather scraping
-- **API Layer**: HTTP route handlers
-- **Utils**: Reusable utility functions
-- **Constants**: Shared constants and mappings
+### Coastal Provinces
+
+Wave data is fetched separately using the `gfsWave` model for these provinces:
+
+> Kampot, Kep, Koh Kong, Preah Sihanouk
 
 ### Data Flow
 
-1. Client requests weather data via API
-2. API routes handle the request
-3. Service layer fetches from database or triggers scraping
-4. Scraper parses HTML and stores in Supabase
-5. Response sent back to client
+```
+┌──────────────────┐     ┌──────────────────┐
+│  cambodiameteo   │     │   Windy API v2   │
+│  (HTML scraping) │     │  (Point Forecast) │
+└────────┬─────────┘     └────────┬─────────┘
+         │                        │
+    weatherScraper.js       windyScraper.js
+         │                        │
+         └────────┬───────────────┘
+                  │
+           ┌──────▼──────┐
+           │   Supabase   │
+           │  PostgreSQL   │
+           └──────┬───────┘
+                  │
+           ┌──────▼──────┐
+           │  REST API    │
+           │  (routes.js) │
+           └──────┬───────┘
+                  │
+           ┌──────▼──────┐
+           │  Dashboard   │
+           │  (index.html)│
+           └──────────────┘
+```
+
+### Duplicate Prevention
+
+Both scrapers check for existing data before inserting:
+
+- **MOWRAM**: Checks by `area_id` + `forecast_date`
+- **Windy Forecast**: Checks by `area_id` + `model` + today's `forecast_date`
+- **Windy Air Quality**: Checks by `area_id` + today's `forecast_date`
+
+Use `?force=true` (API) or `--force` (CLI) to bypass duplicate checks.
 
 ## 🔧 Configuration
-
-All configuration is managed through environment variables and the config module:
 
 ```javascript
 // src/config/index.js
 export const config = {
   port: process.env.PORT || 3001,
   nodeEnv: process.env.NODE_ENV || 'development',
-  supabase: {
-    /* ... */
-  },
-  scraper: {
-    /* ... */
-  },
-  cors: {
-    /* ... */
-  },
+  supabase: { url, serviceRoleKey },
+  scraper: { baseUrl, dataRetentionDays: 14, requestTimeout: 30000 },
+  windy: { apiKey },
+  cors: { allowedOrigins },
 };
 ```
 
@@ -295,36 +415,37 @@ export const config = {
 
 ### Vercel
 
-The project includes a `vercel.json` configuration for easy Vercel deployment:
-
 ```bash
+# Deploy to Vercel
 vercel deploy
-```
 
-Configure environment variables in your Vercel project settings.
+# Required environment variables in Vercel dashboard:
+# NEXT_PUBLIC_SUPABASE_URL
+# SUPABASE_SERVICE_ROLE_KEY
+# WINDY_API_KEY
+```
 
 ### Supabase Edge Functions
 
-Deploy the edge function for scheduled scraping:
-
 ```bash
-cd supabase/functions
+# Deploy both edge functions
 supabase functions deploy weather-scraper
+supabase functions deploy windy-scraper
+
+# Set secrets
+supabase secrets set WINDY_API_KEY=your-key-here
 ```
 
 ## 🔒 Environment Variables
 
-| Variable                    | Description                            | Required |
-| --------------------------- | -------------------------------------- | -------- |
-| `NEXT_PUBLIC_SUPABASE_URL`  | Your Supabase project URL              | Yes      |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key              | Yes      |
-| `PORT`                      | Server port (default: 3001)            | No       |
-| `NODE_ENV`                  | Environment (development/production)   | No       |
-| `ALLOWED_ORIGINS`           | CORS allowed origins (comma-separated) | No       |
-
-## 🧪 Testing
-
-Testing framework coming soon. Contributions welcome!
+| Variable                       | Description                            | Required |
+| ------------------------------ | -------------------------------------- | -------- |
+| `NEXT_PUBLIC_SUPABASE_URL`     | Supabase project URL                   | Yes      |
+| `SUPABASE_SERVICE_ROLE_KEY`    | Supabase service role key              | Yes      |
+| `WINDY_API_KEY`                | Windy Point Forecast API key           | Yes      |
+| `PORT`                         | Server port (default: 3001)            | No       |
+| `NODE_ENV`                     | Environment (development/production)   | No       |
+| `ALLOWED_ORIGINS`              | CORS allowed origins (comma-separated) | No       |
 
 ## 🤝 Contributing
 
@@ -340,18 +461,15 @@ This project is licensed under the MIT License.
 
 ## 👥 Authors
 
-Developed for MOWRAM (Ministry of Water Resources and Meteorology) Cambodia
+Developed by **SCI Dev Team** for MOWRAM (Ministry of Water Resources and Meteorology) Cambodia
 
 ## 🙏 Acknowledgments
 
-- Weather data sourced from [cambodiameteo.com](http://cambodiameteo.com)
+- MOWRAM weather data sourced from [cambodiameteo.com](http://cambodiameteo.com)
+- Forecast & air quality data from [Windy API](https://api.windy.com/)
 - Built with [Supabase](https://supabase.com)
 - Deployed on [Vercel](https://vercel.com)
 
-## 📞 Support
-
-For issues and questions, please open an issue on GitHub.
-
 ---
 
-**Note**: This is a restructured professional version (v2.0.0) of the weather scraper project.
+**v2.0.0** — MOWRAM + Windy Point Forecast + Air Quality Integration
