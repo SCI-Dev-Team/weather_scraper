@@ -15,6 +15,7 @@ import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { formatDate } from '../utils/dateHelpers.js';
 import {
+  WINDY_ENDPOINTS,
   WINDY_MODELS,
   DEFAULT_MODEL,
   DEFAULT_PARAMETERS,
